@@ -1,222 +1,310 @@
-// script.js — Full updated JS code to run with your HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-let schedule = JSON.parse(localStorage.getItem('schedule')) || [];
-let dayNotes = JSON.parse(localStorage.getItem('dayNotes')) || {};
-let currentDate = new Date();
-
-function addTask(day, startTime, endTime, task, repeat = false) {
-  if (!day) day = document.getElementById('day').value;
-  if (!startTime) startTime = document.getElementById('start-time').value;
-  if (!endTime) endTime = document.getElementById('end-time').value;
-  if (!task) task = document.getElementById('task').value.trim();
-
-  repeat = document.getElementById('repeat-task')?.checked || false;
-  const repeatMode = document.getElementById('repeat-mode')?.value || 'weekly';
-  const googleSync = document.getElementById('google-sync')?.checked || false;
-
-  if (document.getElementById('mode').value === 'date') {
-    const dd = document.getElementById('select-day').value;
-    const mm = document.getElementById('month-select').value;
-    const yy = document.getElementById('select-year').value;
-    if (dd && mm && yy) {
-      const date = new Date(`${yy}-${parseInt(mm) + 1}-${dd}`);
-      day = date.toLocaleDateString('en-US', { weekday: 'long' });
-    }
-  }
-
-  if (!day || !startTime || !endTime || !task) return;
-  schedule.push({ day, startTime, endTime, task, repeat, repeatMode, googleSync });
-  localStorage.setItem('schedule', JSON.stringify(schedule));
-  renderSchedule();
-}
-
-function renderSchedule() {
-  const list = document.getElementById('schedule-list');
-  const calendar = document.getElementById('calendar');
-  const monthGrid = document.getElementById('month-grid');
-  const monthTitle = document.getElementById('month-title') || document.createElement('div');
-
-  list.innerHTML = calendar.innerHTML = monthGrid.innerHTML = '';
-
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const map = Object.fromEntries(days.map(d => [d, []]));
-  schedule.forEach((item, i) => {
-    item.index = i;
-    map[item.day]?.push(item);
-  });
-
-  // WEEK VIEW
-  days.forEach(day => {
-    const cell = document.createElement('div');
-    cell.className = 'calendar-cell';
-    const tasks = map[day];
-    let html = '';
-    if (!tasks.length) {
-      html += `<p class='text-gray-500 text-xs italic mb-1'>No tasks</p>`;
-    }
-    html += tasks.map(e => `<p class='text-xs text-green-300 truncate task-item' title="${e.task}">${e.task}</p>`).join('');
-    cell.onclick = () => showDetails(day, tasks);
-    cell.innerHTML = html;
-    calendar.appendChild(cell);
-  });
-
-  // MONTH VIEW
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const today = new Date();
-  const todayDate = today.getDate();
-  const isTodayMonth = today.getFullYear() === year && today.getMonth() === month;
-
-  const first = new Date(year, month, 1);
-  const offset = first.getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  if (monthTitle) monthTitle.textContent = `${currentDate.toLocaleString('en-US', { month: 'long' })} ${year}`;
-
-  for (let i = 0; i < offset; i++) monthGrid.appendChild(document.createElement('div'));
-
-  for (let i = 1; i <= daysInMonth; i++) {
-    const date = new Date(year, month, i);
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const match = schedule.filter(e => e.day === dayName);
-    const cell = document.createElement('div');
-    cell.className = 'calendar-cell relative';
-
-    const isToday = isTodayMonth && i === todayDate;
-    let html = `<div class="flex justify-center items-center h-6">
-      <span class="${isToday ? 'inline-block w-6 h-6 flex items-center justify-center border border-white rounded-full' : ''} text-white font-bold text-sm">${i}</span>
-    </div>`;
-    html += match.map(e => `<p class='text-xs text-blue-300 truncate task-item' title="${e.task}">${e.task}</p>`).join('');
-    cell.innerHTML = html;
-    cell.onclick = () => showDetails(i, match);
-    monthGrid.appendChild(cell);
-  }
-
-  // TASK LIST
-  schedule.forEach((item, index) => {
-    const div = document.createElement('div');
-    div.className = 'bg-gray-700 p-3 rounded';
-    div.innerHTML = `
-      <div class='flex justify-between items-center'>
-        <span>🕒 <strong>${item.day}</strong> ${item.startTime}–${item.endTime}: ${item.task}
-          ${item.repeat ? ` (repeats ${item.repeatMode})` : ""}
-          ${item.googleSync ? ` 🔗 Google` : ""}
-        </span>
-        <div class='flex items-center space-x-2'>
-          <button onclick='removeTask(${index})' class='text-red-400 text-lg'>×</button>
-          <button onclick='showClone(${index})' class='text-blue-400 text-lg'>🔁</button>
-          <button onclick='showEdit(${index})' class='text-yellow-400 text-lg'>✏️</button>
+<!--Top Navigation Bar-->
+<nav class="top-bar">
+  <div class="container">
+    <div class="nav-btn-group">
+      <button onclick="showAddTask()" class="nav-btn add-btn" aria-label="Add Task">
+        <i class="fas fa-plus"></i>
+      </button>
+      <div class="dropdown" id="view-dropdown">
+        <button class="nav-btn view-btn" onclick="toggleViewDropdown()" aria-haspopup="true" aria-expanded="false">
+          View <i class="fas fa-angle-down"></i>
+        </button>
+        <div class="dropdown-menu" id="view-dropdown-menu">
+          <button onclick="showWeekView(); closeViewDropdown();" class="dropdown-item"><i class="fas fa-calendar-week"></i> Week View</button>
+          <button onclick="showMonthView(); closeViewDropdown();" class="dropdown-item"><i class="fas fa-calendar"></i> Month View</button>
         </div>
       </div>
-      <div id='clone-${index}' class='hidden mt-2 space-y-1'></div>
-    `;
-    list.appendChild(div);
-  });
-}
-
-function changeMonth(offset) {
-  currentDate.setMonth(currentDate.getMonth() + offset);
-  renderSchedule();
-}
-
-function goToToday() {
-  currentDate = new Date();
-  renderSchedule();
-}
-
-function removeTask(index) {
-  schedule.splice(index, 1);
-  localStorage.setItem('schedule', JSON.stringify(schedule));
-  renderSchedule();
-}
-
-function showClone(index) {
-  const container = document.getElementById(`clone-${index}`);
-  const item = schedule[index];
-  container.innerHTML = `
-    <select id='clone-day-${index}' class='w-full p-1 rounded'>
-      ${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        .map(d => `<option>${d}</option>`).join('')}
-    </select>
-    <div class='flex gap-1'>
-      <input type='time' id='clone-start-${index}' class='w-1/2 p-1 rounded'>
-      <input type='time' id='clone-end-${index}' class='w-1/2 p-1 rounded'>
     </div>
-    <button onclick='submitClone(${index})' class='w-full p-1 rounded bg-green-600 hover:bg-green-700'>➕ Add Copy</button>
-  `;
-  container.classList.remove('hidden');
-}
+    <button onclick="openSettingsModal()" class="nav-btn settings-btn" aria-label="Settings">
+      <i class="fas fa-cog"></i>
+    </button>
+  </div>
+</nav>
 
-function submitClone(index) {
-  const base = schedule[index];
-  const day = document.getElementById(`clone-day-${index}`).value;
-  const start = document.getElementById(`clone-start-${index}`).value;
-  const end = document.getElementById(`clone-end-${index}`).value;
-  if (day && start && end) addTask(day, start, end, base.task, base.repeat);
-}
-
-function showEdit(index) {
-  const item = schedule[index];
-  const container = document.getElementById(`clone-${index}`);
-  container.innerHTML = `
-    <select id='edit-day-${index}' class='w-full p-1 rounded'>
-      ${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        .map(d => `<option${d === item.day ? " selected" : ""}>${d}</option>`).join('')}
-    </select>
-    <div class='flex gap-1'>
-      <input type='time' id='edit-start-${index}' class='w-1/2 p-1 rounded' value='${item.startTime}'>
-      <input type='time' id='edit-end-${index}' class='w-1/2 p-1 rounded' value='${item.endTime}'>
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal hidden">
+    <div class="modal-inner" style="max-width:340px;">
+        <button onclick="closeSettingsModal()" class="modal-close" aria-label="Close">&times;</button>
+        <h2 class="section-title" style="margin-bottom:1em;">Settings</h2>
+        <div class="settings-content" style="display:flex; flex-direction: column; gap: 1em;">
+            <button class="primary-btn" onclick="openLoginModal()">Log In / Sign Up</button>
+            <!-- Theme Collapsible -->
+            <div>
+                <button class="primary-btn" onclick="toggleThemeSection()" id="theme-btn" style="width:100%;text-align:left;">
+                    Theme <i id="theme-arrow" class="fas fa-angle-down"></i>
+                </button>
+                <div id="theme-section" style="margin-top:0.7em;display:none;">
+                    <div class="theme-toggle-wrap" style="display:flex;align-items:center;gap:0.8em;">
+                        <i class="fas fa-moon moon"></i>
+                        <div class="theme-toggle" id="theme-toggle" tabindex="0" aria-label="Theme Toggle">
+                            <div class="toggle-thumb" id="toggle-thumb"></div>
+                        </div>
+                        <i class="fas fa-sun sun"></i>
+                    </div>
+                </div>
+            </div>
+            <!-- Language Collapsible -->
+            <div>
+                <button class="primary-btn" onclick="toggleLanguageSection()" id="language-btn" style="width:100%;text-align:left;">
+                    Language <i id="language-arrow" class="fas fa-angle-down"></i>
+                </button>
+                <div id="language-section" style="margin-top:0.7em;display:none;">
+                    <select id="language-select" onchange="changeLanguage()" style="width:100%;">
+                        <option value="en">English</option>
+                        <option value="vn">Vietnamese</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ru">Russian</option>
+                        <option value="ar">Arabic</option>
+                        <option value="hi">Hindi</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="it">Italian</option>
+                        <option value="ko">Korean</option>
+                        <option value="tr">Turkish</option>
+                        <option value="id">Indonesian</option>
+                        <option value="th">Thai</option>
+                        <option value="nl">Dutch</option>
+                        <option value="pl">Polish</option>
+                        <option value="sv">Swedish</option>
+                        <option value="fi">Finnish</option>
+                        <option value="no">Norwegian</option>
+                        <option value="da">Danish</option>
+                    </select>
+                </div>
+            </div>
+            <!--More settings can be added here--> 
+        </div>
     </div>
-    <input type='text' id='edit-task-${index}' class='w-full p-1 rounded' value='${item.task}'>
-    <button onclick='submitEdit(${index})' class='w-full p-1 rounded bg-yellow-500 hover:bg-yellow-600'>✅ Save changes</button>
-  `;
-  container.classList.remove('hidden');
-}
+</div>
 
-function submitEdit(index) {
-  const day = document.getElementById(`edit-day-${index}`).value;
-  const start = document.getElementById(`edit-start-${index}`).value;
-  const end = document.getElementById(`edit-end-${index}`).value;
-  const task = document.getElementById(`edit-task-${index}`).value;
-  if (!day || !start || !end || !task) return;
+<!--Add Task Modal-->
+<div id="add-task-modal" class="modal hidden">
+    <div class="modal-inner" style="max-width:400px;">
+        <button onclick="closeAddTaskModal()" class="modal-close" aria-label="Close">&times;</button>
+        <h2 class="section-title"style="margin-bottom:1em;">Add New Task</h2>
+        <div>Add Task here...</div>
+    </div>
+</div>
 
-  schedule[index] = { ...schedule[index], day, startTime: start, endTime: end, task };
-  localStorage.setItem('schedule', JSON.stringify(schedule));
-  renderSchedule();
-}
+<!--View Modal-->
+<div id="view-modal" class="modal hidden">
+    <div class="modal-inner" style="max-width:320px;">
+        <button onclick="closeViewModal()" class="modal-close" aria-label="Close">&times;</button>
+        <h2 class="section-title" style="margin-bottom:1em;">Select View</h2>
+        <button onclick="showWeekView()" class="primary-btn" style="margin-bottom:1em;">
+            <i class="fas fa-calendar-week"></i> Week View</button>
+        <button onclick="showMonthView()" class="primary-btn">
+            <i class="fas fa-calendar"></i> Month View</button>   
+    </div>
+</div>
 
-function showDetails(day, matchedTasks) {
-  const modal = document.getElementById('modal');
-  const content = document.getElementById('modal-content');
-  const title = typeof day === "string" ? `📌 Details for ${day}` : `📌 Details for Day ${day}`;
-  const html = `
-    <button onclick="closeModal()" class="modal-close">×</button>
-    <h2 class='text-xl font-bold mb-2'>${title}</h2>
-    ${
-      matchedTasks.length === 0
-        ? `<div class="space-y-1"><p class="text-gray-400 font-semibold">No tasks</p><p class="text-sm italic text-gray-500">Use the Add button to create one.</p></div>`
-        : matchedTasks.map((e, i) => {
-            const id = e.index ?? i;
-            return `
-              <div class='mb-3'>
-                <p class='text-blue-300 mb-1'>📅 ${e.day} ${e.startTime}–${e.endTime}: ${e.task}</p>
-                <textarea id="note-${id}" placeholder="Write note here..." class="w-full p-2 rounded bg-gray-700 text-sm text-white resize-none">${e.note || ""}</textarea>
-              </div>
-            `;
-          }).join('')
-    }
-  `;
-  content.innerHTML = html;
-  modal.style.display = 'flex';
-}
+<!-- Login Modal Example -->
+<div id="login-modal" class="modal hidden">
+  <div class="modal-inner" style="max-width:340px;">
+    <button onclick="closeLoginModal()" class="modal-close" aria-label="Close">&times;</button>
+    <h2 class="section-title">Log In / Sign Up</h2>
+    <div style="margin:1em 0;">
+      <input type="text" placeholder="Email" style="width:100%;margin-bottom:0.7em;">
+      <input type="password" placeholder="Password" style="width:100%;margin-bottom:0.7em;">
+      <button class="primary-btn" style="width:100%;">Sign In</button>
+    </div>
+    <div style="font-size:0.95em;color:#888;text-align:center;">No account? <a href="#" style="color:var(--primary)">Sign up</a></div>
+  </div>
+</div>
 
-function closeModal() {
-  schedule.forEach((item, index) => {
-    const el = document.getElementById(`note-${index}`);
-    if (el) schedule[index].note = el.value.trim();
-  });
-  localStorage.setItem('schedule', JSON.stringify(schedule));
-  document.getElementById('modal').style.display = 'none';
-}
+<!-- Task Details Modal -->
+    <div id="modal" class="modal hidden">
+  <div class="modal-inner">
+    <button onclick="closeModal()" class="modal-close" aria-label="Close">&times;</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
 
-document.addEventListener('DOMContentLoaded', renderSchedule);
+<!--Main Content-->
+<div class="container main-content" style="margin-top:100px;">
+    <!--Task Creation Form-->
+    <section class="box" id="add-task-section">
+        <h2 class="section-title">Add New Task</h2>
+        <div class="section-content">
+        <!--Mode Selection-->
+            <div class="mode-selection">
+                <label><input type="radio" name="mode" value="day" checked> Select Day</label>
+                <label><input type="radio" name="mode" value="date"> Select Date</label>
+            </div>
+
+        <!--Select Day-->
+            <div id="day-selection" class="input-grid">
+                <select id="day">
+                    <option value="">select day</option>
+                    <option value="Monday">Mon</option>
+                    <option value="Tuesday">Tue</option>
+                    <option value="Wednesday">Wed</option>
+                    <option value="Thursday">Thu</option>
+                    <option value="Friday">Fri</option>
+                    <option value="Saturday">Sat</option>
+                    <option value="Sunday">Sun</option>
+                </select>
+                <input type="time" id="start-time" placeholder="Start Time">
+                <input type="time" id="end-time" placeholder="End Time">
+                <input type="text" id="task" placeholder="Task Description">
+            </div>
+
+        <!--Select Date-->
+            <div id="date-selection" class="input-grid hidden">
+            <!--Day Inputs-->
+                <select id="select-day">
+                    <option value="">Day</option>
+                    <script>
+                        for(let i = 1; i <= 31; i++) {
+                            document.write(`<option value="${i}">${i}</option>`);
+                        }
+                    </script>
+                </select>
+            <!--Month Inputs-->
+                <select id="select-month">
+                    <option value="">Month</option>
+                    <option value="0">Jan</option>
+                    <option value="1">Feb</option>
+                    <option value="2">Mar</option>
+                    <option value="3">Apr</option>
+                    <option value="4">May</option>
+                    <option value="5">June</option>
+                    <option value="6">July</option>
+                    <option value="7">Aug</option>
+                    <option value="8">Sept</option>
+                    <option value="9">Oct</option>
+                    <option value="10">Nov</option>
+                    <option value="11">Dec</option>
+                </select>
+            <!-- Year Inputs -->
+                <select id="select-year">
+                    <option value="">Year</option>
+                    <script>
+                        for(let y = 2022; y <= 2032; y++) {
+                            document.write(`<option value="${y}">${y}</option>`);
+                        }
+                    </script>
+                </select>
+            </div>
+
+            <!-- Additional Options -->
+            <div class="options-row">
+                <label><input type="checkbox" id="repeat-task"> Repeat Task</label>
+                <select id="repeat-mode">
+                    <option value="weekly">Weekly</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+                <label><input type="checkbox" id="google-sync"> Google Sync</label>
+            </div>
+            <button onclick="addTask()" class="primary-btn">
+                <i class="fas fa-plus"></i> Add Task
+            </button>
+        </div>
+    </section>
+
+        <!-- Calendar Navigation -->
+        <section class="box">
+            <div class="cal-nav">
+                <div>
+                    <button onclick="changeMonth(-1)" class="nav-btn"><i class="fas fa-chevron-left"></i></button>
+                    <span id="month-title" class="month-title">Month Year</span>
+                    <button onclick="changeMonth(1)" class="nav-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div>
+                    <select id="month-select">
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                    <select id="year-select"></select>
+                    <button onclick="goToToday()" class="today-btn">
+                        <i class="fas fa-calendar-day"></i> Today
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Calendar + Task Layout -->
+        <div class="calendar-layout">
+            <div class="calendar-left">
+            <!-- Week View -->
+            <section class="box week-view-box">
+                <h3 class="section-title"><i class="fas fa-calendar-week"></i> Week View</h3>
+                <div class="cal-weekdays week-small">
+                    <div>Mon</div><div>Tue</div><div>Wed</div>
+                    <div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+                </div>
+                <div id="calendar" class="cal-grid week-small"></div>
+            </section>
+            <!-- All Tasks -->
+            <section class="box task-list-box">
+                <h3 class="section-title"><i class="fas fa-list"></i> All Tasks</h3>
+                <div id="schedule-list"></div>
+            </section>
+        </div>
+        <div class="calendar-right">
+            <!-- Month View with Navigation -->
+            <section class="box month-view-box">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:1em; margin-bottom:1em;">
+                    <h3 class="section-title" style="margin-bottom:0;">
+                        <i class="fas fa-calendar"></i> Month View
+                    </h3>
+                <div class="cal-nav" style="margin-bottom:0;">
+                    <button onclick="changeMonth(-1)" class="nav-btn"><i class="fas fa-chevron-left"></i></button>
+                    
+                    <select id="month-select" style="margin:0 0.2em;">
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                    <select id="year-select"></select>
+                    <button onclick="goToToday()" class="today-btn">
+                        <i class="fas fa-calendar-day"></i> Today
+                    </button>
+                </div>
+            </div>
+            <div class="cal-weekdays">
+                <div>Mon</div><div>Tue</div><div>Wed</div>
+                <div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+            </div>
+            <div id="month-grid" class="cal-grid"></div>
+    </section>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
