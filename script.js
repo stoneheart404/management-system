@@ -20,6 +20,9 @@ document.querySelectorAll('input[name="mode"]').forEach(radio => {
     });
 });
 
+// Set language based on browser settings
+document.documentElement.lang = (navigator.language || navigator.userLanguage || 'en').slice(0,2);
+
 // Top Bar Navigation
 // Modal Controls
 function openAddTaskModal() {
@@ -65,16 +68,38 @@ document.addEventListener('click', function(e) {
   });
 });
 
-function toggleThemeSection() {
-    const themeSection = document.getElementById('theme-section');
-    const langSection = document.getElementById('language-section');
-    const themeArrow = document.getElementById('theme-arrow');
-    themeSection.style.display = (themeSection.style.display === 'block') ? 'none' : 'block';
-    themeArrow.className = (themeSection.style.display === 'block') ? 'fas fa-angle-up' : 'fas fa-angle-down';
-    langSection.style.display = 'none';
-    document.getElementById('language-arrow').className = 'fas fa-angle-down';
+function setTheme(theme) {
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');  
+    }
+    localStorage.setItem('theme', theme);
   }
-  function toggleLanguageSection() {
+
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('theme-toggle');
+    const thumb = document.getElementById('toggle-thumb');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+
+    if (toggle && thumb) {
+        // Set initial thumb position and active class
+        thumb.style.transform = savedTheme === 'dark' ? 'translateX(1.25rem)' : 'translateX(0)';
+        toggle.classList.toggle('active', savedTheme === 'dark');
+
+        toggle.addEventListener('click', function() {
+            const isDark = document.documentElement.classList.contains('dark');
+            setTheme(isDark ? 'light' : 'dark');
+            // Move thumb and update class
+            const nowDark = !isDark;
+            thumb.style.transform = nowDark ? 'translateX(1.25rem)' : 'translateX(0)';
+            toggle.classList.toggle('active', nowDark);
+        });
+    }
+});
+
+function toggleLanguageSection() {
     const langSection = document.getElementById('language-section');
     const themeSection = document.getElementById('theme-section');
     const langArrow = document.getElementById('language-arrow');
@@ -85,7 +110,7 @@ function toggleThemeSection() {
   }
   function openLoginModal() { document.getElementById('login-modal').classList.remove('hidden'); }
   function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); }
-  
+
 // Add task
 function addTask(day, startTime, endTime, task, repeat = false) {
     const dayEl = document.getElementById('day');

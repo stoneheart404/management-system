@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="">
 <head>
   <meta charset="UTF-8">
   <title>Management System</title>
@@ -52,8 +52,16 @@
                         </div>
                         <i class="fas fa-sun sun"></i>
                     </div>
+                    <!-- Optional: Theme select for accessibility/testing -->
+   
+                    <select id="theme-select" style="margin-top:1em;">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+   
                 </div>
             </div>
+
             <!-- Language Collapsible -->
             <div>
                 <button class="primary-btn" onclick="toggleLanguageSection()" id="language-btn" style="width:100%;text-align:left;">
@@ -61,28 +69,28 @@
                 </button>
                 <div id="language-section" style="margin-top:0.7em;display:none;">
                     <select id="language-select" onchange="changeLanguage()" style="width:100%;">
+                        <option value=""disabled selected>Select Language</option>
+                        <option value="">(only English is availible unless you use the browser setting ^^')</option>
                         <option value="en">English</option>
-                        <option value="vn">Vietnamese</option>
+                        <option value="zh">Chinese (Simplified)</option>
                         <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="zh">Chinese</option>
-                        <option value="ja">Japanese</option>
-                        <option value="ru">Russian</option>
-                        <option value="ar">Arabic</option>
                         <option value="hi">Hindi</option>
+                        <option value="ar">Arabic</option>
+                        <option value="fr">French</option>
+                        <option value="ru">Russian</option>
                         <option value="pt">Portuguese</option>
-                        <option value="it">Italian</option>
-                        <option value="ko">Korean</option>
-                        <option value="tr">Turkish</option>
                         <option value="id">Indonesian</option>
-                        <option value="th">Thai</option>
-                        <option value="nl">Dutch</option>
+                        <option value="de">German</option>
+                        <option value="ja">Japanese</option>
+                        <option value="tr">Turkish</option>
+                        <option value="vi">Vietnamese</option>
+                        <option value="ko">Korean</option>
+                        <option value="it">Italian</option>
                         <option value="pl">Polish</option>
+                        <option value="nl">Dutch</option>
+                        <option value="th">Thai</option>
                         <option value="sv">Swedish</option>
-                        <option value="fi">Finnish</option>
-                        <option value="no">Norwegian</option>
-                        <option value="da">Danish</option>
+                        <option value="fa">Persian (Farsi)</option>
                     </select>
                 </div>
             </div>
