@@ -23,51 +23,51 @@ document.querySelectorAll('input[name="mode"]').forEach(radio => {
 // Set language based on browser settings
 document.documentElement.lang = (navigator.language || navigator.userLanguage || 'en').slice(0,2);
 
-// Top Bar Navigation
-// Modal Controls
-function openAddTaskModal() {
-  document.getElementById('add-task-modal').classList.remove('hidden');
+function openSidebar() {
+  if (window.innerWidth >= 768) return; // Only open on mobile
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.add('open');
+  sidebar.classList.remove('hidden');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (overlay) overlay.style.display = 'block';
 }
-function closeAddTaskModal() {
-  document.getElementById('add-task-modal').classList.add('hidden');
-}
-function openViewModal() {
-  document.getElementById('view-modal').classList.remove('hidden');
-}
-function closeViewModal() {
-  document.getElementById('view-modal').classList.add('hidden');
-}
-function openSettingsModal() {
-  document.getElementById('settings-modal').classList.remove('hidden');
-}
-function closeSettingsModal() {
-  document.getElementById('settings-modal').classList.add('hidden');
+function closeSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.remove('open');
+  setTimeout(() => sidebar.classList.add('hidden'), 300);
+  const overlay = document.getElementById('sidebar-overlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
-// Navigation handlers (scroll to relevant sections)
-function showAddTask() {
-  document.getElementById('add-task-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  closeViewModal();
-}
-function showWeekView() {
-  document.querySelector('.week-view-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  closeViewModal();
-}
-function showMonthView() {
-  document.querySelector('.month-view-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  closeViewModal();
+// Collapse/expand
+let sidebarCollapsed = false;
+function toggleSidebarCollapse() {
+  sidebarCollapsed = !sidebarCollapsed;
+  const sidebar = document.getElementById('sidebar');
+  if (sidebarCollapsed) {
+    sidebar.style.width = '70px';
+    sidebar.classList.add('collapsed');
+    // Hide text, show only icons etc (optional, needs more CSS)
+  } else {
+    sidebar.style.width = '275px';
+    sidebar.classList.remove('collapsed');
+  }
 }
 
-// Optional: close modals when clicking the background
-document.addEventListener('click', function(e) {
-  ['add-task-modal','view-modal','settings-modal'].forEach(function(id) {
-    var modal = document.getElementById(id);
-    if (modal && !modal.classList.contains('hidden') && e.target === modal) {
-      modal.classList.add('hidden');
-    }
-  });
-});
-
+// Collapsible sections
+function toggleSidebarSection(section) {
+  const menu = document.getElementById('section-' + section);
+  const arrow = document.getElementById('arrow-' + section);
+  if (menu.classList.contains('closed')) {
+    menu.classList.remove('closed');
+    arrow.classList.remove('fa-chevron-right');
+    arrow.classList.add('fa-chevron-down');
+  } else {
+    menu.classList.add('closed');
+    arrow.classList.remove('fa-chevron-down');
+    arrow.classList.add('fa-chevron-right');
+  }
+}
 function setTheme(theme) {
     if (theme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -76,6 +76,21 @@ function setTheme(theme) {
     }
     localStorage.setItem('theme', theme);
   }
+
+// Set initial sidebar state based on device
+// Mobile: hidden, Desktop: open
+function setSidebarInitialState() {
+  const sidebar = document.getElementById('sidebar');
+  if (window.innerWidth >= 768) {
+    sidebar.classList.add('open');
+    sidebar.classList.remove('hidden');
+  } else {
+    sidebar.classList.remove('open');
+    sidebar.classList.add('hidden');
+  }
+}
+window.addEventListener('DOMContentLoaded', setSidebarInitialState);
+window.addEventListener('resize', setSidebarInitialState);
 
 document.addEventListener('DOMContentLoaded', function() {
     const toggle = document.getElementById('theme-toggle');
