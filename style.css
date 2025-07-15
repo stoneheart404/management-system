@@ -11,7 +11,6 @@
   --text-secondary: #757575;     /* Muted text */
   --sidebar-width: 275px;
   --sidebar-bg: #ededed;         /* Sidebar bg (light gray) */
-  --sidebar-text: #232323;       /* Sidebar text */
   --sidebar-group: #f4f4f6;      /* Group backgrounds (lighter gray) */
   --sidebar-hover: #e2e2e6;      /* Menu hover bg */
 }
@@ -27,7 +26,7 @@
   --accent: #fff;
   --sidebar-bg: #23232b;
   --sidebar-text: #ededed;
-  --sidebar-group: #222225;
+  --ssidebar-group: #222225;
   --sidebar-hover: #29292d;
 }
 
@@ -173,20 +172,27 @@
   color: var(--sidebar-text);
 }
 
-.sidebar-search-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  background: #f4f5f7;
-  color: #222;
-  border: none;
-  border-radius: 8px;
-  padding: 0.7em 1.6em;
-  margin: 0.2em 1em 0.8em 1em;
-  cursor: pointer;
+/* Sidebar search */
+.sidebar-search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    background: #f4f5f7;
+    color: #222;
+    border-radius: 7px;
+    padding: 0.7em 1.6em;
+    margin: 0.2em 1em 0.8em 1em;
 }
-.sidebar-search-btn:hover {
-  background: var(--bg);
+.sidebar-search-input {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 1em;
+    width: 100%;
+    outline: none;
+}
+.sidebar-search-box:focus-within {
+    background: var(--bg);
 }
 
 /* Sidebar nav and groups */
@@ -197,7 +203,7 @@
   width: 100%;
   background: none;
   border: none;
-  color: var(--sidebar-text);
+  color: var(--text);
   font-size: 1.05em;
   padding: 0.7em 1.3em 0.7em 1.2em;
   text-align: left;
@@ -244,21 +250,27 @@
   overflow: visible;
 }
 
-.sidebar-menu li { margin-bottom: 0.2em; }
+.sidebar-menu li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .sidebar-menu button {
   background: none;
   border: none;
-  color: var(--sidebar-text);
+  color: var(--text);
   width: 100%;
   padding: 0.6em 1.2em;
-  border-radius: 8px;
-  transition: background 0.12s, color 0.12s;
   font-size: 1em;
+  border-radius: 8px;
   text-align: left;
   display: flex;
   align-items: center;
   gap: 0.7em;
   margin-bottom: 2px;
+  position: relative;
+  transition: background 0.12s, color 0.12s;
+  border-radius: 20px 0 0 20px; /* cut-in left side */
 }
 
 .sidebar-menu button:focus {
@@ -286,29 +298,29 @@
   display: none;
 }
 
-.sidebar-menu button.active,
+
 .sidebar-menu button:focus {
   position: relative;
-  background: var(--bg); /* No fill */
-  color: var(--primary); /* Text color */
-  z-index: 1; /* Ensure it’s above the background */
-  overflow: visible; /* Allow background to show through */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Optional shadow for depth */
-  border-radius: 0 20px 20px 0;
+  background: var(--bg);  /* highlight full button */
+  color: var(--primary);
+  border: none;
+  border-radius: 0 20px 20px 0; /* right corners rounded, left corners square */
+  z-index: 1;
+  overflow: visible;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04); /* optional soft shadow */
 }
-/* Create the outward curve effect on the left */
 .sidebar-menu button.active::before,
 .sidebar-menu button:focus::before {
   content: '';
   position: absolute;
-  left: -16px; /* Negative to stick out */
-  top: 0; /* Align with top */
-  bottom: 0; /* Full height */
-  width: 32px; /* Width of the curve */
-  height: 100%; /* Full height */
-  background: var(--bg); /* Background color of the sidebar */
-  border-radius: 20px 0 0 20px; /* Left side curve */
-  z-index: -1; /* Behind the button */
+  left: -16px;
+  top: 0;
+  width: 32px;
+  height: 100%;
+  background: var(--bg);
+  border-radius: 20px 0 0 20px; /* left side pill shape */
+  z-index: 1;
 }
 
 /* For dark mode */
@@ -318,7 +330,7 @@
 }
 .dark .sidebar-menu button.active::before,
 .dark .sidebar-menu button:focus::before {
-  background: var(--bg); /* Dark mode background */
+  background: var(--bg);
 }
 .sidebar-menu button.active:hover {
   background: rgba(255, 255, 255, 0.1); /* Light hover effect */
@@ -326,6 +338,7 @@
 }
 /* ----------- Sidebar Styles ----------- */
 /* Mobile: hidden Desktop: open */
+
 .sidebar {
   left: -275px;
 }
@@ -348,7 +361,7 @@
     display: flex;
   }
   .sidebar.hidden {
-    display: flex; /* Always visible on desktop */
+    display: none;
   }
 }
 @media (max-width: 767px) {
